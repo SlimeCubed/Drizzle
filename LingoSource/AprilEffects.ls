@@ -44,7 +44,7 @@ on applyGrapeRoots me, q, c, eftc
       if skyRootsFix then
         quadsToDraw.add(qd)
       else
-        layerd.copyPixels(DRPxl, qd, DRPxlRect, {#color:gLOProps.pals[gLOProps.pal].detCol})
+        layerd.copyPixels(DRPxl, qd, DRPxlRect, {#color: color(255,0,0)})
       end if
       
       if solidAfaMv(giveGridPos(lstPos) + gRenderCameraTilePos, lr) = 1 then
@@ -60,7 +60,7 @@ on applyGrapeRoots me, q, c, eftc
     
     if skyRootsFix then
       repeat with qdd in quadsToDraw
-        layerd.copyPixels(DRPxl, qdd, DRPxlRect, {#color:gLOProps.pals[gLOProps.pal].detCol})
+        layerd.copyPixels(DRPxl, qdd, DRPxlRect, {#color:color(255,0,0)})
       end repeat
     end if
     

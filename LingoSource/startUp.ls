@@ -1,8 +1,8 @@
 global gSaveProps, gTEprops, gTiles, gLEProps, gFullRender, gEEprops, gEffects, gLightEProps, lvlPropOutput, gLEVEL, gLOprops, gLoadedName, gViewRender, gMassRenderL, gCameraProps, gImgXtra, gEnvEditorProps, gPEprops
-global altGrafLG, gMegaTrash, showControls, gProps, gLOADPATH, gTrashPropOptions, solidMtrx, INT_EXIT, INT_EXRD, DRCustomMatList, DRLastTL, gCustomEffects, GL_ptPos, GL_drPos, GL_keyDict, gCustomLights, gVersion, ldEvilCangleLayer, gRenderFileCache
+global altGrafLG, gMegaTrash, showControls, gProps, gLOADPATH, gTrashPropOptions, solidMtrx, INT_EXIT, INT_EXRD, DRCustomMatList, DRLastTL, gCustomEffects, GL_ptPos, GL_drPos, GL_keyDict, gCustomLights, gVersion, ldEvilCangleLayer
 
 on exitFrame me
-  gVersion = "v5.0.0"
+  gVersion = "v5.2.0"
   
   hadException: number = 0
   
@@ -40,8 +40,6 @@ on exitFrame me
   ldEvilCangleLayer = FALSE
   gMassRenderL = []
   gLOADPATH = []
-  gRenderFileCache = []
-  gRenderFileCache.sort() -- mark it as sorted to keep it as sorted throughout
   
   gLEVEL = [#timeLimit:4800, #defaultTerrain:1, #maxFlies:10, #flySpawnRate:50, #lizards:[], #ambientSounds:[], #music:"NONE", #tags:[], #lightType:"Static", #waterDrips:1, #lightRect:rect(0,0,1040,800), #matrix:[]]
   
@@ -218,7 +216,7 @@ on exitFrame me
               matTl[#sz] = point(1, 1)
               matTl[#specs] = [0]
               if matTl.findPos(#autofit) then matTl[#renderType] = "customAutofit"
-              else if matTl.findPos(#pattern) then MatTl[#renderType] = "customPattern"
+              else if matTl.findPos(#pattern) then matTl[#renderType] = "customPattern"
               else matTl[#renderType] = "customUnified"
               DRCustomMatList.add(matTl)
               
@@ -234,7 +232,6 @@ on exitFrame me
                 if (not matTl.autofit.findPos(#categories)) then matTl.autofit[#categories] = []
                 if (not matTl.autofit.findPos(#tiles)) then 
                   matTl.autofit[#tiles] = []
-                  matTl.autofit[#tileWeights] = []
                 end if
                 if (not matTl.autofit.findPos(#ignoreTiles)) then matTl.autofit[#ignoreTiles] = []      
                 
@@ -253,70 +250,11 @@ on exitFrame me
                       1:
                         matTl.autofit.categories.append(matLn)
                       2:
-                        weight = 1
-                        if (MatLn contains ":") then
-                          -- Weight
-                          wOffset = offset(":", matLn)
-                          weight = value(matLn.char[(wOffset+1)..(matLn.length)])
-                          matLn = matLn.char[1..(wOffset-1)]
-                          -- Remove trailing spaces
-                          repeat while (the last char of matLn) = " " then -- matLn.char[matLn.length] gives nothing if whitespace?? forced into lingo-english
-                            -- delete the last char of matLn -- This lingo-english doesnt work in Drizzle
-                            matLn = matLn.char[1..(matLn.length-1)]
-                          end repeat
-                        end if
                         matTl.autofit.tiles.append(matLn)
-                        matTl.autofit.tileWeights.append(weight)
                       3:
                         matTl.autofit.ignoreTiles.append(matLn)
                     end case
                   end if
-                end repeat
-              end if
-              
-              -- Deal with pattern material
-              if (matTl[#renderType] = "customPattern") then
-                afMat = member("initImport")
-                afMat.text = ""
-                member("initImport").importFileInto("Materials/" & matTl.nm & ".txt")
-                afMat.name = "initImport"
-                
-                -- Make sure parts are correct
-                if (not matTl.pattern.findPos(#patterns)) then matTl.pattern[#patterns] = []
-                if (not matTl.pattern.findPos(#tiles)) then matTl.pattern[#tiles] = []
-                if (not matTl.pattern.findPos(#sz)) then matTl.pattern[#sz] = point(1,1)
-                
-                -- Import information
-                importPart = 2 -- tiles by default
-                repeat with matLnNo = 1 to the number of lines in afMat.text
-                  matLn = afMat.text.line[matLnNo]
-                  if (matLn starts "-Pattern") then
-                    -- Multiple patterns can be defined, so each -Pattern starts a new one
-                    importPart = 1
-                    
-                    -- Weight
-                    weight = 1
-                    if (matLn contains ":") then
-                      wOffset = offset(":", matLn)
-                      weight = value(matLn.char[(wOffset+1)..(matLn.length)])
-                    end if
-                    
-                    currentPattern = []
-                    matTl.pattern.patterns.append([currentPattern, weight])
-                    
-                  else if (matLn = "-Tiles") then
-                    importPart = 2
-                    
-                  else if (matLn <> "") then
-                    if (importPart = 1) then
-                      -- Add pattern tile
-                      currentPattern.append(value(matLn))
-                    else
-                      -- Add tile
-                      matTl.pattern.tiles.append(matLn)
-                    end if
-                  end if
-                  
                 end repeat
               end if
             end if
@@ -344,6 +282,8 @@ on exitFrame me
   tilesInCat.add([#nm:"Alt Grate Box", #sz:point(1,1), #specs:[0], #placeMethod:"rect", #color:color(75, 75, 240)])
   -- Alduris
   tilesInCat.add([#nm:"Ventbox Rect", #sz:point(1,1), #specs:[0], #placeMethod:"rect", #color:color(0,0,255)])
+  tilesInCat.add([#nm:"Random machine rect", #sz:point(1,1), #specs:[0], #placeMethod:"rect", #color:color(72, 116, 80)])
+  tilesInCat.add([#nm:"Anything goes", #sz:point(1,1), #specs:[0], #placeMethod:"rect", #color:color(255,255,255)])
   setFirstTileCat(gTiles.count + 1)
   
   sav = member("initImport")
@@ -377,10 +317,28 @@ on exitFrame me
         hadException = 1
       else
         -- Here is where it normally would have added the tile to the preview. That is extremely slow so we just straight up don't do that :3
+        -- Instead I have some error checking we do to skip malformed tile inits
         ad = value(savTextLine)
-        ad[#ptPos] = 0
+        ad.setaProp(#category, gTiles.count)
+        ad.setaProp(#ptPos, 0)
+        if (ad.findPos(#nm) = 0) then
+          writeException("Tile Init Error", "Line" && q && "in your Graphics/Init.txt does not have a #nm defined! Skipping line. (" & savTextLine & ")")
+          next repeat
+        end if
+        if (ad.findPos(#tp) = 0) then
+          writeException("Tile Init Error", "Line" && q && "in your Graphics/Init.txt does not have a #tp defined! Skipping line. (" & savTextLine & ")")
+          next repeat
+        end if
+        if (ad.findPos(#specs2) = 0) then
+          writeException("Tile Init Warning", "Line" && q && "in your Graphics/Init.txt does not have a #specs2 defined! Assuming value. (" & savTextLine & ")")
+          ad.addProp(#specs2, 0)
+        end if
+        if (ad.findPos(#tags) = 0) then
+          writeException("Tile Init Warning", "Line" && q && "in your Graphics/Init.txt does not have a #tags defined! Assuming empty. (" & savTextLine & ")")
+          ad.addProp(#tags, [])
+        end if
         if (ad.tags.getPos("notTile") = 0) then
-          gTiles[gTiles.count].tls.add(ad)
+          gTiles.getAt(gTiles.count).tls.add(ad)
         end if
       end if
     end if
@@ -426,6 +384,27 @@ on exitFrame me
         hadException = 1
       else
         ad = value(savTextLine)
+        -- Brief error checking
+        if (ad.findPos(#nm) = 0) then
+          writeException("Prop Init Error", "Line" && q && "in your Props/Init.txt does not have a #nm defined! Skipping line. (" & savTextLine & ")")
+          next repeat
+        end if
+        if (ad.findPos(#tp) = 0) then
+          writeException("Prop Init Error", "Line" && q && "in your Props/Init.txt does not have a #tp defined! Skipping line. (" & savTextLine & ")")
+          next repeat
+        end if
+        if (ad.findPos(#layerExceptions) = 0) then
+          ad.addProp(#layerExceptions, [])
+        end if
+        if (ad.findPos(#tags) = 0) then
+          writeException("Prop Init Warning", "Line" && q && "in your Props/Init.txt does not have a #tags defined! Assuming empty. (" & savTextLine & ")")
+          ad.addProp(#tags, [])
+        end if
+        if (ad.findPos(#notes) = 0) then
+          writeException("Prop Init Warning", "Line" && q && "in your Props/Init.txt does not have a #notes defined! Assuming empty. (" & savTextLine & ")")
+          ad.addProp(#notes, [])
+        end if
+        -- Ok add it
         ad.addProp(#category, gProps.count)
         if (ad.tp = "standard") or (ad.tp = "variedStandard") then
           dp: number = 0
@@ -434,7 +413,7 @@ on exitFrame me
           end repeat
           ad.addProp(#depth, dp)
         end if
-        gProps[gProps.count].prps.add(ad)
+        gProps.getAt(gProps.count).prps.add(ad)
       end if
     end if
   end repeat
@@ -597,7 +576,7 @@ on exitFrame me
   gProps[gProps.count].prps.add([#nm:"Fez Tree", #tp:"fezTree", #depth:10, #tags:[], #notes:["Click again after placing to determine the position of the tree's base. Press Q or E while in this mode to rotate the base.", "Please note that the preview line does not necessarily indicate the path that the trunk will take."], #previewColor:color(255,0, 0), #author:"Cappin"])
   
   gProps.add([#nm:"Community Procedural Plants", #clr:color(0, 255, 0), #prps:[]])
-  gProps[gProps.count].prps.add([#nm:"Mosaic Plant", #tp:"mosaicPlant", #depth:2, #tags:[], #notes:["Place in front of the furthest sublayer. Leaves appear in the sublayer in front of stems. Flowers appear in the sublayer in front of leaves and are not counted in the preview range."], #previewColor:color(0,113,53), #author:"Alduris"])
+  gProps[gProps.count].prps.add([#nm:"Mosaic Plant", #tp:"mosaicPlant", #depth:2, #tags:["keepRatio"], #notes:["Place in front of the furthest sublayer. Leaves appear in the sublayer in front of stems. Flowers appear in the sublayer in front of leaves and are not counted in the preview range."], #previewColor:color(0,113,53), #author:"Alduris"])
   
   gTrashPropOptions = []
   gMegaTrash = []
@@ -813,10 +792,6 @@ on exitFrame me
     gEffects[gEffects.count].efs.add( [#nm:"Brain Growers"])
     gEffects[gEffects.count].efs.add( [#nm:"Upside Down Brain Growers"])
     
-    gEffects.add([#nm:"Pattern Materials", #efs:[]])
-    gEffects[gEffects.count].efs.add( [#nm:"Pattern Depth"])
-    gEffects[gEffects.count].efs.add( [#nm:"Pattern Chaos"])
-    
     gEffects.add([#nm:"LB Plants", #efs:[]])
     gEffects[gEffects.count].efs.add( [#nm:"Colored Hang Roots"]    )
     gEffects[gEffects.count].efs.add( [#nm:"Colored Thick Roots"]   )
@@ -931,12 +906,12 @@ on exitFrame me
     gEffects[gEffects.count].efs.add([#nm:"Ripcords"])
     gEffects[gEffects.count].efs.add([#nm:"Spud Buds"])
     gEffects[gEffects.count].efs.add([#nm:"Cross Roses"])
-    gEffects[gEffects.count].efs.add([#nm:"Cables"])
+    --gEffects[gEffects.count].efs.add([#nm:"Cables"])
     if getBoolConfig("Addy special") then
       -- Contact @addystrawbry before use
       gEffects[gEffects.count].efs.add([#nm:"Smoke Weeds"])
     end if
-    gEffects[gEffects.count].efs.add([#nm:"Mushroom Colonies"])
+    --gEffects[gEffects.count].efs.add([#nm:"Mushroom Colonies"])
     
   end if
   

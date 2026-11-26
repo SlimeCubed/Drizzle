@@ -894,7 +894,6 @@ on drawATileTile(q: number, c: number, l: number, tl, frntImg: image, dt: list, 
   
   global gAnyDecals
   
-  --INTERNAL
   if (checkDRInternal(tl.nm)) then
     tileImage = member(tl.nm).image
   else
@@ -950,6 +949,17 @@ on drawATileTile(q: number, c: number, l: number, tl, frntImg: image, dt: list, 
           rct = rect((g-1)*20, (h-1)*20, (g*20), (h*20)) 
           getrct = rect(20, (n-1)*20, 40, n*20)
           member("vertImg").image.copyPixels(tileImage, rct, getrct, {#ink:36})
+          --          if(colored)then
+          --            if (tl.tags.GetPos("effectColorA") = 0) and (tl.tags.GetPos("effectColorB") = 0) then
+          --              member("vertDc").image.copyPixels(tileImage, rct, getrct+rect(tl.sz.locH*20+(40*tl.bfTiles),0,tl.sz.locH*20+(40*tl.bfTiles), 0), {#ink:36})
+          --            end if
+          --          end if
+          --          if(effectColorA)then
+          --            member("vertGradA").image.copyPixels(tileImage, rct, getrct+rect(tl.sz.locH*20+(40*tl.bfTiles),0,tl.sz.locH*20+(40*tl.bfTiles), 0), {#ink:36})
+          --          end if
+          --          if(effectColorB)then
+          --            member("vertGradB").image.copyPixels(tileImage, rct, getrct+rect(tl.sz.locH*20+(40*tl.bfTiles),0,tl.sz.locH*20+(40*tl.bfTiles), 0), {#ink:36})
+          --          end if
           getrct = rect(0, (n-1)*20, 20, n*20)
           member("horiImg").image.copyPixels(tileImage, rct, getrct, {#ink:36})
           --          if(colored)then
@@ -1356,7 +1366,7 @@ on drawATileTile(q: number, c: number, l: number, tl, frntImg: image, dt: list, 
                 ornt = 1
               end if
               -- put rct
-              member("layer"&string(dp)).image.copypixels(member("bigChainSegment").image, rotateToQuad(rct, degDir), gtRect, {#color:gLOProps.pals[gLOProps.pal].detCol, #ink:36})
+              member("layer"&string(dp)).image.copypixels(member("bigChainSegment").image, rotateToQuad(rct, degDir), gtRect, {#color: color(255,0,0), #ink:36})
               -- member("layer"&string(dp)).image.copypixels(member("bigChainSegment").image, rct, member("bigChainSegment").image.rect, {#color:color(255,0,0), #ink:36})
             end repeat
             
@@ -4117,6 +4127,7 @@ on renderTileMaterial(layer, material, frntImg)
         if delL.findPos(tl)=void then
           
           randomOrderList: list = []
+          randomOrderList.sort() -- COMMS 5.1.0 OPTIMIZATION: mark list as sorted first so it sorts as .add() is called
           repeat with w = 1 to randomMachines.count then
             randomMachinesW = randomMachines.getAt(w)
             repeat with h = 1 to randomMachinesW.count then
@@ -4126,7 +4137,6 @@ on renderTileMaterial(layer, material, frntImg)
               end repeat
             end repeat
           end repeat
-          randomOrderList.sort()
           
           repeat with q = 1 to randomOrderList.count then
             testTileIndex = randomOrderList.getAt(q).getAt(2)

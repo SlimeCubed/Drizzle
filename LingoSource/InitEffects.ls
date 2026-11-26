@@ -111,6 +111,7 @@ on ApplyCustomStandardPlant (q, c, effectr, cEff, effGraf, repeatL, totalLayers)
     if solidMtrx[q2][c2][layer]=0 and solidCheck>=1 then
       repeat with i = 1 to mtrx[q2][c2] * 0.01 * amount then
         repeatLTemp = repeatL.duplicate()
+        currentImageLayer = 0
         pnt = giveGroundPosCustom(q,c,layer, cEff.tp)
         clingerMult = (giveMiddleOfTile(point(q,c)).locH>pnt.locH)
         d = random(9) + ((layer-1)*10)

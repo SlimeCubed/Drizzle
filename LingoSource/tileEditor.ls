@@ -376,6 +376,9 @@ on updateTileMenu(mv)
   put RETURN after txt
   
   repeat with tl = 1 to gTiles[gTEprops.tmPos.locH].tls.count then
+    if gTEprops.tmPos.locV <= gTiles[gTEprops.tmPos.locH].tls.count and gTEprops.tmPos.locV - 20 - tl > 0 then
+      next repeat
+    end if
     if tl = gTEprops.tmPos.locV then
       put "-" && gTiles[gTEprops.tmPos.locH].tls[tl].nm && "-" && RETURN after txt
     else
@@ -985,6 +988,260 @@ on SpecialRectPlacement(rct)
         repeat with b = rct.top + 2 to rct.bottom - 2 then
           placeTile(point(a, b), tilePositions[1])
         end repeat
+      end repeat
+      
+    "Random machine rect":
+      -- Find missing machines category
+      missingMachineList = ["Small Machine Slope NE", "Small Machine Slope NW", "Small Machine Slope SW", "Small Machine Slope SE", "Small Machine Floor"]
+      repeat with missingMachineTileCat = getFirstTileCat() to gTiles.count then
+        if(gTiles[missingMachineTileCat].nm = "LB Missing Machine")then
+          exit repeat
+        end if
+      end repeat
+      
+      -- Fill slopes and floors and cache solid tiles
+      tls = []
+      repeat with a = rct.left to rct.right then
+        repeat with b = rct.top to rct.bottom then
+          case (gLEProps.Matrix[a][b][gTEprops.workLayer][1]) of
+            2:
+              placeTile(point(a,b), point(missingMachineTileCat, 1))
+            3:
+              placeTile(point(a,b), point(missingMachineTileCat, 2))
+            4:
+              placeTile(point(a,b), point(missingMachineTileCat, 4))
+            5:
+              placeTile(point(a,b), point(missingMachineTileCat, 3))
+            6:
+              placeTile(point(a,b), point(missingMachineTileCat, 5))
+            1:
+              case (gTEprops.tlMatrix[a][b][gTEprops.workLayer].tp) of
+                "tileHead", "tileBody":
+                  -- do nothing
+                otherwise:
+                  tls.add(point(a,b))
+              end case
+          end case
+        end repeat
+      end repeat
+      tls.sort()
+      cnt = tls.count
+      
+      -- Get all valid random machines we can place
+      randomMachines = []
+      repeat with w = 1 to 8 then
+        lst = []
+        repeat with h = 1 to 8 then
+          lst.add([])
+        end repeat
+        randomMachines.add(lst)
+      end repeat
+      
+      global RandomMachines_grabTiles, RandomMachines_forbidden
+      repeat with a = 1 to RandomMachines_grabTiles.count then
+        repeat with q = 1 to gTiles.count then
+          if(gTiles.getAt(q).nm = RandomMachines_grabTiles.getAt(a))then
+            repeat with t = 1 to gTiles.getAt(q).tls.count then
+              theTile = gTiles.getAt(q).tls.getAt(t)
+              if(theTile.sz.locH <= 8)and(theTile.sz.locV <= 8)and(theTile.specs2 = 0)and(RandomMachines_forbidden.getPos(theTile.nm) = 0)then
+                randomMachines.getAt(theTile.sz.locH).getAt(theTile.sz.locV).add(point(q,t))
+              end if
+            end repeat
+          end if
+        end repeat
+      end repeat
+      
+      -- Actually place things
+      delL = [:]
+      delL.sort()
+      tlsBlock = [:]
+      tlsBlock.sort()
+      repeat with tl in tls then
+        tlsBlock.setaProp(tl, 1)
+      end repeat
+      repeat with tl in tls then
+        if delL.findPos(tl)=void then
+          
+          randomOrderList = []
+          repeat with w = 1 to randomMachines.count then
+            randomMachinesW = randomMachines.getAt(w)
+            repeat with h = 1 to randomMachinesW.count then
+              randomMachinesH = randomMachinesW.getAt(h)
+              repeat with t = 1 to randomMachinesH.count then
+                randomOrderList.add([random(1000), randomMachinesH.getAt(t)])
+              end repeat
+            end repeat
+          end repeat
+          randomOrderList.sort()
+          
+          repeat with q = 1 to randomOrderList.count then
+            testTileIndex = randomOrderList.getAt(q).getAt(2)
+            testTile = gTiles[testTileIndex.locH].tls[testTileIndex.locV]
+            
+            legalToPlace = true
+            repeat with a = 0 to testTile.sz.locH-1 then
+              repeat with b = 0 to testTile.sz.locV-1 then
+                testPoint = tl + point(a,b)
+                spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                
+                if(tlsBlock.findPos(testPoint)=void)then
+                  legalToPlace = false
+                  exit repeat
+                end if
+                
+                if(spec > -1)then
+                  if(delL.findPos(testPoint)<>void)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                  if(gLEProps.Matrix[testPoint.locH][testPoint.locV][gTEprops.workLayer][1] <> spec)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                end if
+              end repeat
+              if(legalToPlace = false)then
+                exit repeat
+              end if
+            end repeat
+            
+            if(legalToPlace)then
+              rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+              placeTile(rootPos, testTileIndex)
+              repeat with a = 0 to testTile.sz.locH-1 then
+                repeat with b = 0 to testTile.sz.locV-1 then
+                  spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                  if(spec > -1)then
+                    delL.setAProp(tl+point(a,b), 1)
+                  end if
+                end repeat
+              end repeat
+              exit repeat
+            end if
+          end repeat
+        end if
+        
+      end repeat
+      
+    "Anything goes":
+      -- Fill slopes and floors and cache solid tiles
+      tls = []
+      repeat with a = rct.left to rct.right then
+        repeat with b = rct.top to rct.bottom then
+          if gLEProps.Matrix[a][b][gTEprops.workLayer][1] > 0 then
+            case (gTEprops.tlMatrix[a][b][gTEprops.workLayer].tp) of
+              "tileHead", "tileBody":
+                -- do nothing
+              otherwise:
+                tls.add(point(a,b))
+            end case
+          end if
+        end repeat
+      end repeat
+      tls.sort()
+      cnt = tls.count
+      
+      -- Get all valid random machines we can place (though we limit tile size a bit)
+      randomTiles = []
+      maxSize = 40 -- despite being limited, this is still an extremely generous amount
+      maxSize = min(maxSize, max(rct.width, rct.height))
+      repeat with w = 1 to maxSize then
+        lst = []
+        repeat with h = 1 to maxSize then
+          lst.add([])
+        end repeat
+        randomTiles.add(lst)
+      end repeat
+      
+      repeat with q = getFirstTileCat() to gTiles.count then
+        repeat with t = 1 to gTiles.getAt(q).tls.count then
+          theTile = gTiles.getAt(q).tls.getAt(t)
+          if (theTile.sz.locH <= maxSize) and (theTile.sz.locV <= maxSize) and (theTile.specs2 = 0) then
+            foundSolid = 0
+            -- check that there is at least one solid tile
+            repeat with a = 1 to theTile.specs.count then
+              if theTile.specs[a] > 0 then
+                foundSolid = 1
+                exit repeat
+              end if
+            end repeat
+            if foundSolid then
+              randomTiles.getAt(theTile.sz.locH).getAt(theTile.sz.locV).add(point(q,t))
+            end if
+          end if
+        end repeat
+      end repeat
+      
+      -- Actually place things
+      delL = [:]
+      delL.sort()
+      tlsBlock = [:]
+      tlsBlock.sort()
+      repeat with tl in tls then
+        tlsBlock.setaProp(tl, 1)
+      end repeat
+      repeat with tl in tls then
+        if delL.findPos(tl)=void then
+          
+          randomOrderList = []
+          repeat with w = 1 to randomTiles.count then
+            randomTilesW = randomTiles.getAt(w)
+            repeat with h = 1 to randomTilesW.count then
+              randomTilesH = randomTilesW.getAt(h)
+              repeat with t = 1 to randomTilesH.count then
+                randomOrderList.add([random(32767), randomTilesH.getAt(t)])
+              end repeat
+            end repeat
+          end repeat
+          randomOrderList.sort()
+          
+          repeat with q = 1 to randomOrderList.count then
+            testTileIndex = randomOrderList.getAt(q).getAt(2)
+            testTile = gTiles[testTileIndex.locH].tls[testTileIndex.locV]
+            
+            legalToPlace = true
+            repeat with a = 0 to testTile.sz.locH-1 then
+              repeat with b = 0 to testTile.sz.locV-1 then
+                testPoint = tl + point(a,b)
+                spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                
+                if(tlsBlock.findPos(testPoint)=void)then
+                  legalToPlace = false
+                  exit repeat
+                end if
+                
+                if(spec > -1)then
+                  if(delL.findPos(testPoint)<>void)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                  if(gLEProps.Matrix[testPoint.locH][testPoint.locV][gTEprops.workLayer][1] <> spec)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                end if
+              end repeat
+              if(legalToPlace = false)then
+                exit repeat
+              end if
+            end repeat
+            
+            if(legalToPlace)then
+              rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+              placeTile(rootPos, testTileIndex)
+              repeat with a = 0 to testTile.sz.locH-1 then
+                repeat with b = 0 to testTile.sz.locV-1 then
+                  spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                  if(spec > -1)then
+                    delL.setAProp(tl+point(a,b), 1)
+                  end if
+                end repeat
+              end repeat
+              exit repeat
+            end if
+          end repeat
+        end if
+        
       end repeat
   end case
 end 

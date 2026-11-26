@@ -57,7 +57,7 @@ on newFrame me
   
   effectr = gEEprops.effects[r]
   if (effectr.crossScreen = 0) then -- if we're not moving onto the next screen, (or maybe this just means we're not on the first screen?? no fucking clue. doesn't really matter anway.)
-    sprite(59).locV = vertRepeater*20 -- i think this moves that big line across the screen that shows where the effect is being applied? no clue.
+    sprite(59).locV = vertRepeater*20 - 216 -- i think this moves that big line across the screen that shows where the effect is being applied? no clue.
     
     -- render all of the tiles within this row.
     repeat with q = 1 to 100
@@ -76,7 +76,7 @@ on newFrame me
   else -- otherwise...
     -- uhh just do the same thing i guess??
     repmcam = vertRepeater - gRenderCameraTilePos.locV
-    sprite(59).locV = repmcam * 20
+    sprite(59).locV = repmcam * 20 - 216
     repeat with q2 = 1 to gLOprops.size.locH
       me.effectOnTile(q2 - gRenderCameraTilePos.locH, repmcam, q2, vertRepeater, effectr)
     end repeat
@@ -791,7 +791,9 @@ on initEffect me
   put RETURN after txt
   
   repeat with ef = 1 to gEEprops.effects.count then
-    
+    if r - 20 - ef > 0 then
+      next repeat
+    end if
     if ef = r then
       put string(ef)&". ->"&gEEprops.effects[ef].nm after txt
     else

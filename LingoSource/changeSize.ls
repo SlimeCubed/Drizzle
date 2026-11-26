@@ -14,6 +14,15 @@ on exitFrame me
       end if
     end if
     gLOProps.extraTiles = extraBufferTiles.duplicate()
+    
+    -- Fix possible issues with extra tiles hopefully
+    repeat with i = 1 to gLOProps.extraTiles.count then
+      if gLOProps.extraTiles[i] < 0 or gLOProps.extraTiles[i] = void or ilk(gLOProps.extraTiles[i]) <> #number then
+        gLOProps.extraTiles[i] = 0
+      end if
+    end repeat
+    
+    -- Finally go back
     _movie.go(9)
   else if _key.keyPressed(56) then
     _movie.go(9)

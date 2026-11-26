@@ -111,16 +111,25 @@ on updateText(me)
   if (gCurrentlyRenderingTrash) then
     put "Trash props -   " & string(c) & " / " & string(gRenderTrashProps.count) & RETURN after txt
   else
+    linesBefore = 0
+    linesToAdd = []
     repeat with prp = 1 to propsToRender.count
       renderPrp = propsToRender[prp]
       propAddress: point = renderPrp[3]
       if (ShouldThisPropRender(gProps[propAddress.loch].prps[propAddress.locV], renderPrp[4], renderPrp[5].settings)) then
-        if (prp = viewProp) then
-          put string(prp) & ". ->" & renderPrp[2] after txt
-        else
-          put string(prp) & ". " & renderPrp[2] after txt
+        if prp < viewProp then
+          linesBefore = linesBefore + 1
         end if
-        put RETURN after txt
+        if (prp = viewProp) then
+          linesToAdd.append(string(prp) & ". ->" & renderPrp[2])
+        else
+          linesToAdd.append(string(prp) & ". " & renderPrp[2])
+        end if
+      end if
+    end repeat
+    repeat with prpLine = 1 to linesToAdd.count 
+      if linesBefore - 20 - prpLine <= 0 then
+        put linesToAdd[prpLine] & RETURN after txt
       end if
     end repeat
   end if
@@ -174,7 +183,8 @@ on renderProp(prop, dp: number, qd: list, mdPoint: point, data: object)
   DoPropTags(prop, dp, qd)
 end
 
-on renderMosaicPlant(qd, mdPoint: point, prop, data, lr: number, propData)
+on renderMosaicPlant(qd, mdPoint, prop, data, lr, propData)
+  lr = min(lr, 28)
   -- Init
   case data.effectColor of
     "Color1":
