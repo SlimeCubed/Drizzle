@@ -1333,8 +1333,7 @@ public sealed unsafe partial class LingoImage
         {
             // TODO: Make this fast.
             var bgra5551 = srcDat[rowMajorPos];
-            var bgra = new Bgra32();
-            bgra.FromBgra5551(bgra5551);
+            var bgra = Bgra32.FromBgra5551(bgra5551);
             return (int)bgra.PackedValue;
         }
 
@@ -1346,7 +1345,7 @@ public sealed unsafe partial class LingoImage
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write(Span<Bgra5551> dstDat, int rowMajorPos, int value)
         {
-            dstDat[rowMajorPos].FromBgra32(Unsafe.As<int, Bgra32>(ref value));
+            dstDat[rowMajorPos] = Bgra5551.FromBgra32(Unsafe.As<int, Bgra32>(ref value));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1362,14 +1361,13 @@ public sealed unsafe partial class LingoImage
             for (var i = 0; i < dstDat.Length; i++)
             {
                 var elem = pixelData.GetElement(i);
-                dstDat[i].FromBgra32(Unsafe.As<int, Bgra32>(ref elem));
+                dstDat[i] = Bgra5551.FromBgra32(Unsafe.As<int, Bgra32>(ref elem));
             }
         }
 
         public static void Fill(Span<Bgra5551> dstDat, int value)
         {
-            var px = new Bgra5551();
-            px.FromBgra32(Unsafe.As<int, Bgra32>(ref value));
+            var px = Bgra5551.FromBgra32(Unsafe.As<int, Bgra32>(ref value));
             dstDat.Fill(px);
         }
     }

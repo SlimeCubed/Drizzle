@@ -376,6 +376,9 @@ on updateTileMenu(mv)
   put RETURN after txt
   
   repeat with tl = 1 to gTiles[gTEprops.tmPos.locH].tls.count then
+    if gTEprops.tmPos.locV <= gTiles[gTEprops.tmPos.locH].tls.count and gTEprops.tmPos.locV - 20 - tl > 0 then
+      next repeat
+    end if
     if tl = gTEprops.tmPos.locV then
       put "-" && gTiles[gTEprops.tmPos.locH].tls[tl].nm && "-" && RETURN after txt
     else
@@ -401,6 +404,10 @@ on updateTileMenu(mv)
     gTEprops.toolType = "special"
     gTEprops.toolData = gTiles[gTEprops.tmPos.locH].tls[gTEprops.tmPos.locV].nm
     member("tilePreview").image = image(1,1,1)
+  else if gTiles[gTEprops.tmPos.locH].tls[gTEprops.tmPos.locV].tp = "autotile" then
+    gTEprops.toolType = "special"
+    gTEprops.toolData = gTiles[gTEprops.tmPos.locH].tls[gTEprops.tmPos.locV].nm
+    member("tilePreview").image = image(1,1,1)
   else
     if gTEprops.specialEdit = 0 then
       sprite(19).visibility = 0
@@ -423,21 +430,34 @@ on action(msTile)
   if msTile.inside(rect(1,1,gLOprops.size.loch+1,gLOprops.size.locv+1)) and (_mouse.mouseLoc.inside(rect(16, 17, 848, 657)))then
     case gTEprops.toolType of
       "material":
+        -- Figure out where to place
         l = [msTile]
         if checkCustomKeybind(#TileBigBrush, "F") then
           l = [msTile, msTile+point(1,0),msTile+point(-1,0),msTile+point(0,1),msTile+point(0,-1),msTile+point(-1,-1),msTile+point(-1,1),msTile+point(1,1),msTile+point(1,-1)]
         else if checkCustomKeybind(#TileBiggerBrush, "V") then
           l = [msTile, msTile+point(1,0),msTile+point(-1,0),msTile+point(0,1),msTile+point(0,-1),msTile+point(-1,-1),msTile+point(-1,1),msTile+point(1,1),msTile+point(1,-1),msTile+point(0,-2),msTile+point(1,-2),msTile+point(2,-2),msTile+point(-1,-2),msTile+point(-2,-2),msTile+point(0,2),msTile+point(1,2),msTile+point(2,2),msTile+point(-1,2),msTile+point(-2,2),msTile+point(-2,0),msTile+point(-2,1),msTile+point(-2,-1),msTile+point(2,0),msTile+point(2,1),msTile+point(2,-1)]
         end if
+        
+        -- Place materials
+        forceAdaptTerrain = checkCustomKeybind(#TileForceGeometry, "G")
         repeat with q in l then
           if q.inside(rect(1,1,gLOprops.size.loch+1,gLOprops.size.locv+1)) then
             if ["tileHead", "tileBody"].getPos(gTEprops.tlMatrix[q.locH][q.locV][gTEprops.workLayer].tp) = 0 then
               gTEprops.tlMatrix[q.locH][q.locV][gTEprops.workLayer].tp = "material"
               gTEprops.tlMatrix[q.locH][q.locV][gTEprops.workLayer].data = gTEprops.toolData
+              
+              if forceAdaptTerrain then
+                gLEProps.Matrix[q.locH][q.locV][gTEprops.workLayer][1] = 1
+              end if
             end if
             TEdraw(rect(q,q), gTEprops.workLayer)
           end if
         end repeat
+        
+        -- Redraw geometry
+        if(forceAdaptTerrain)then
+          lvlEditDraw(rect(msTile-point(2,2), msTile+point(2,2)), gTEprops.workLayer)
+        end if
       "tile":
         if ((isTilePositionLegal(msTile))or(checkCustomKeybind(#TileBigBrush, "F"))or(checkCustomKeybind(#TileBiggerBrush, "V"))or(checkCustomKeybind(#TileForcePlace, "F"))or(checkCustomKeybind(#TileForceGeometry, "G"))) then
           placeTile(msTile, gTEprops.tmPos)
@@ -456,8 +476,9 @@ on deleteTile(msTile)
   
   global gLOprops
   if msTile.inside(rect(1,1,gLOprops.size.loch+1,gLOprops.size.locv+1)) and (_mouse.mouseLoc.inside(rect(16, 17, 848, 657)))then
-    case   gTEprops.tlMatrix[msTile.locH][msTile.locV][gTEprops.workLayer].tp of
+    case gTEprops.tlMatrix[msTile.locH][msTile.locV][gTEprops.workLayer].tp of
       "material":
+        -- Figure out area size to remove from
         F = 0
         F1 = 0
         if checkCustomKeybind(#TileBigBrush, "F")  then
@@ -467,15 +488,29 @@ on deleteTile(msTile)
           F = -2
           F1 = 2
         end if
+        
+        -- Actually remove
+        forceAdaptTerrain = checkCustomKeybind(#TileForceGeometry, "G")
         repeat with F2 = F to F1 then
           repeat with F3 = F to F1 then
             if msTile.locH+F2 > 0 and msTile.locV+F3 > 0 and msTile.locH+F2 < gLOprops.size.loch+1 and msTile.locV+F3 < gLOprops.size.locv+1 then
               gTEprops.tlMatrix[msTile.locH+F2][msTile.locV+F3][gTEprops.workLayer].tp = "default"
               gTEprops.tlMatrix[msTile.locH+F2][msTile.locV+F3][gTEprops.workLayer].data = 0
+              
+              if forceAdaptTerrain then
+                gLEProps.Matrix[msTile.locH+F2][msTile.locV+F3][gTEprops.workLayer][1] = 0
+              end if
             end if
           end repeat
         end repeat
+        
+        -- Redraw
         TEdraw(rect(msTile+F,msTile+F1), gTEprops.workLayer)
+        
+        if(forceAdaptTerrain)then
+          lvlEditDraw(rect(msTile-point(2,2), msTile+point(2,2)), gTEprops.workLayer)
+        end if
+        
       "tileHead":
         deleteTileTile(msTile, gTEprops.workLayer)
         -- TEdraw(rect(msTile+point(-5, -5),msTile+point(5,5)), 1)
@@ -658,6 +693,9 @@ on PickUpTile(msTile)
   end if
 end 
 
+on getTileMidpointOffset(tl)
+  return point(((tl.sz.locH*0.5)+0.4999).integer,((tl.sz.locV*0.5)+0.4999).integer)
+end
 
 on placeTile(plcTile, tmPos)
   if dontRunStuff() then
@@ -671,7 +709,7 @@ on placeTile(plcTile, tmPos)
   forceAdaptTerrain = checkCustomKeybind(#TileForceGeometry, "G")
   
   tl = gTiles[tmPos.locH].tls[tmPos.locV]
-  mdPnt = point(((tl.sz.locH*0.5)+0.4999).integer,((tl.sz.locV*0.5)+0.4999).integer)
+  mdPnt = getTileMidpointOffset(tl)
   strt = plcTile-mdPnt+point(1,1)
   
   
@@ -734,7 +772,7 @@ on deleteTileTile(ps, lr)
   mdPnt = point(((tl.sz.locH*0.5)+0.4999).integer,((tl.sz.locV*0.5)+0.4999).integer)
   strt = ps-mdPnt+point(1,1)
   ramp = tl.tags.getPos("ramp") > 0
-  
+  forceAdaptTerrain = checkCustomKeybind(#TileForceGeometry, "G")
   
   if (tl.specs2 <> 0)and(lr<3) then
     n = 1
@@ -747,6 +785,9 @@ on deleteTileTile(ps, lr)
           rct = rect((q-1)*16, (c-1)*16, q*16, c*16) - rect(gLEprops.camPos*16, gLEprops.camPos*16)
           member("TEimg"&string(2)).image.copyPixels(member("pxl").image, rct, member("pxl").image.rect, {color:color(255, 255, 255)})
           
+          if forceAdaptTerrain then
+            gLEProps.Matrix[q][c][lr+1][1] = 0
+          end if
         end if
         n = n + 1
       end repeat
@@ -763,10 +804,20 @@ on deleteTileTile(ps, lr)
         rct = rect((q-1)*16, (c-1)*16, q*16, c*16) - rect(gLEprops.camPos*16, gLEprops.camPos*16)
         member("TEimg"&string(lr)).image.copyPixels(member("pxl").image, rct, member("pxl").image.rect, {color:color(255, 255, 255)})
         
+        if forceAdaptTerrain then
+          gLEProps.Matrix[q][c][lr][1] = 0
+        end if
       end if
       n = n + 1
     end repeat
   end repeat
+  
+  -- Redraw geometry
+  if(forceAdaptTerrain)then
+    lvlEditDraw(rect(strt, strt+tl.sz), 1)
+    lvlEditDraw(rect(strt, strt+tl.sz), 2)
+    lvlEditDraw(rect(strt, strt+tl.sz), 3)
+  end if
 end
 
 
@@ -956,7 +1007,7 @@ on SpecialRectPlacement(rct)
           thisPos = tileList.getPos(gTiles[q].tls[a].nm)
           if thisPos > 0 then
             found = found + 1
-            tilePositions[found] = point(q,a)
+            tilePositions[thisPos] = point(q,a)
             if found = 9 then exit repeat
           end if
         end repeat
@@ -986,6 +1037,358 @@ on SpecialRectPlacement(rct)
           placeTile(point(a, b), tilePositions[1])
         end repeat
       end repeat
+      
+    "Random machine rect":
+      -- Find missing machines category
+      missingMachineList = ["Small Machine Slope NE", "Small Machine Slope NW", "Small Machine Slope SW", "Small Machine Slope SE", "Small Machine Floor"]
+      repeat with missingMachineTileCat = getFirstTileCat() to gTiles.count then
+        if(gTiles[missingMachineTileCat].nm = "LB Missing Machine")then
+          exit repeat
+        end if
+      end repeat
+      
+      -- Fill slopes and floors and cache solid tiles
+      tls = []
+      repeat with a = rct.left to rct.right then
+        repeat with b = rct.top to rct.bottom then
+          case (gLEProps.Matrix[a][b][gTEprops.workLayer][1]) of
+            2:
+              placeTile(point(a,b), point(missingMachineTileCat, 1))
+            3:
+              placeTile(point(a,b), point(missingMachineTileCat, 2))
+            4:
+              placeTile(point(a,b), point(missingMachineTileCat, 4))
+            5:
+              placeTile(point(a,b), point(missingMachineTileCat, 3))
+            6:
+              placeTile(point(a,b), point(missingMachineTileCat, 5))
+            1:
+              case (gTEprops.tlMatrix[a][b][gTEprops.workLayer].tp) of
+                "tileHead", "tileBody":
+                  -- do nothing
+                otherwise:
+                  tls.add(point(a,b))
+              end case
+          end case
+        end repeat
+      end repeat
+      tls.sort()
+      cnt = tls.count
+      
+      -- Get all valid random machines we can place
+      randomMachines = []
+      repeat with w = 1 to 8 then
+        lst = []
+        repeat with h = 1 to 8 then
+          lst.add([])
+        end repeat
+        randomMachines.add(lst)
+      end repeat
+      
+      global RandomMachines_grabTiles, RandomMachines_forbidden
+      repeat with a = 1 to RandomMachines_grabTiles.count then
+        repeat with q = 1 to gTiles.count then
+          if(gTiles.getAt(q).nm = RandomMachines_grabTiles.getAt(a))then
+            repeat with t = 1 to gTiles.getAt(q).tls.count then
+              theTile = gTiles.getAt(q).tls.getAt(t)
+              if(theTile.sz.locH <= 8)and(theTile.sz.locV <= 8)and(theTile.specs2 = 0)and(RandomMachines_forbidden.getPos(theTile.nm) = 0)then
+                randomMachines.getAt(theTile.sz.locH).getAt(theTile.sz.locV).add(point(q,t))
+              end if
+            end repeat
+          end if
+        end repeat
+      end repeat
+      
+      -- Actually place things
+      delL = [:]
+      delL.sort()
+      tlsBlock = [:]
+      tlsBlock.sort()
+      repeat with tl in tls then
+        tlsBlock.setaProp(tl, 1)
+      end repeat
+      repeat with tl in tls then
+        if delL.findPos(tl)=void then
+          
+          randomOrderList = []
+          repeat with w = 1 to randomMachines.count then
+            randomMachinesW = randomMachines.getAt(w)
+            repeat with h = 1 to randomMachinesW.count then
+              randomMachinesH = randomMachinesW.getAt(h)
+              repeat with t = 1 to randomMachinesH.count then
+                randomOrderList.add([random(1000), randomMachinesH.getAt(t)])
+              end repeat
+            end repeat
+          end repeat
+          randomOrderList.sort()
+          
+          repeat with q = 1 to randomOrderList.count then
+            testTileIndex = randomOrderList.getAt(q).getAt(2)
+            testTile = gTiles[testTileIndex.locH].tls[testTileIndex.locV]
+            
+            legalToPlace = true
+            repeat with a = 0 to testTile.sz.locH-1 then
+              repeat with b = 0 to testTile.sz.locV-1 then
+                testPoint = tl + point(a,b)
+                spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                
+                if(tlsBlock.findPos(testPoint)=void)then
+                  legalToPlace = false
+                  exit repeat
+                end if
+                
+                if(spec > -1)then
+                  if(delL.findPos(testPoint)<>void)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                  if(gLEProps.Matrix[testPoint.locH][testPoint.locV][gTEprops.workLayer][1] <> spec)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                end if
+              end repeat
+              if(legalToPlace = false)then
+                exit repeat
+              end if
+            end repeat
+            
+            if(legalToPlace)then
+              rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+              placeTile(rootPos, testTileIndex)
+              repeat with a = 0 to testTile.sz.locH-1 then
+                repeat with b = 0 to testTile.sz.locV-1 then
+                  spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                  if(spec > -1)then
+                    delL.setAProp(tl+point(a,b), 1)
+                  end if
+                end repeat
+              end repeat
+              exit repeat
+            end if
+          end repeat
+        end if
+        
+      end repeat
+      
+    "Anything goes":
+      -- Fill slopes and floors and cache solid tiles
+      tls = []
+      repeat with a = rct.left to rct.right then
+        repeat with b = rct.top to rct.bottom then
+          if gLEProps.Matrix[a][b][gTEprops.workLayer][1] > 0 then
+            case (gTEprops.tlMatrix[a][b][gTEprops.workLayer].tp) of
+              "tileHead", "tileBody":
+                -- do nothing
+              otherwise:
+                tls.add(point(a,b))
+            end case
+          end if
+        end repeat
+      end repeat
+      tls.sort()
+      cnt = tls.count
+      
+      -- Get all valid random machines we can place (though we limit tile size a bit)
+      randomTiles = []
+      maxSize = 40 -- despite being limited, this is still an extremely generous amount
+      maxSize = min(maxSize, max(rct.width, rct.height))
+      repeat with w = 1 to maxSize then
+        lst = []
+        repeat with h = 1 to maxSize then
+          lst.add([])
+        end repeat
+        randomTiles.add(lst)
+      end repeat
+      
+      repeat with q = getFirstTileCat() to gTiles.count then
+        repeat with t = 1 to gTiles.getAt(q).tls.count then
+          theTile = gTiles.getAt(q).tls.getAt(t)
+          if (theTile.sz.locH <= maxSize) and (theTile.sz.locV <= maxSize) and (theTile.specs2 = 0) then
+            foundSolid = 0
+            -- check that there is at least one solid tile
+            repeat with a = 1 to theTile.specs.count then
+              if theTile.specs[a] > 0 then
+                foundSolid = 1
+                exit repeat
+              end if
+            end repeat
+            if foundSolid then
+              randomTiles.getAt(theTile.sz.locH).getAt(theTile.sz.locV).add(point(q,t))
+            end if
+          end if
+        end repeat
+      end repeat
+      
+      -- Actually place things
+      delL = [:]
+      delL.sort()
+      tlsBlock = [:]
+      tlsBlock.sort()
+      repeat with tl in tls then
+        tlsBlock.setaProp(tl, 1)
+      end repeat
+      repeat with tl in tls then
+        if delL.findPos(tl)=void then
+          
+          randomOrderList = []
+          repeat with w = 1 to randomTiles.count then
+            randomTilesW = randomTiles.getAt(w)
+            repeat with h = 1 to randomTilesW.count then
+              randomTilesH = randomTilesW.getAt(h)
+              repeat with t = 1 to randomTilesH.count then
+                randomOrderList.add([random(32767), randomTilesH.getAt(t)])
+              end repeat
+            end repeat
+          end repeat
+          randomOrderList.sort()
+          
+          repeat with q = 1 to randomOrderList.count then
+            testTileIndex = randomOrderList.getAt(q).getAt(2)
+            testTile = gTiles[testTileIndex.locH].tls[testTileIndex.locV]
+            
+            legalToPlace = true
+            repeat with a = 0 to testTile.sz.locH-1 then
+              repeat with b = 0 to testTile.sz.locV-1 then
+                testPoint = tl + point(a,b)
+                spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                
+                if(tlsBlock.findPos(testPoint)=void)then
+                  legalToPlace = false
+                  exit repeat
+                end if
+                
+                if(spec > -1)then
+                  if(delL.findPos(testPoint)<>void)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                  if(gLEProps.Matrix[testPoint.locH][testPoint.locV][gTEprops.workLayer][1] <> spec)then
+                    legalToPlace = false
+                    exit repeat
+                  end if
+                end if
+              end repeat
+              if(legalToPlace = false)then
+                exit repeat
+              end if
+            end repeat
+            
+            if(legalToPlace)then
+              rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+              placeTile(rootPos, testTileIndex)
+              repeat with a = 0 to testTile.sz.locH-1 then
+                repeat with b = 0 to testTile.sz.locV-1 then
+                  spec = testTile.specs[(b+1) + (a*testTile.sz.locV)]
+                  if(spec > -1)then
+                    delL.setAProp(tl+point(a,b), 1)
+                  end if
+                end repeat
+              end repeat
+              exit repeat
+            end if
+          end repeat
+        end if
+        
+      end repeat
+      
+    otherwise:
+      -- Custom init rect-type autotilers, like Ventbox Rect
+      autotileDef = gTiles[gTEprops.tmPos.locH].tls[gTEprops.tmPos.locV]
+      
+      -- Find the tiles
+      tileList = [autotileDef.middle, autotileDef.top, autotileDef.right, autotileDef.bottom, autotileDef.left, \
+                  autotileDef.topLeft, autotileDef.topRight, autotileDef.bottomRight, autotileDef.bottomLeft]
+      found = 0
+      tileLocs = [VOID, VOID, VOID, VOID, VOID, VOID, VOID, VOID, VOID]
+      tileDefs = [VOID, VOID, VOID, VOID, VOID, VOID, VOID, VOID, VOID]
+      tileMids = [VOID, VOID, VOID, VOID, VOID, VOID, VOID, VOID, VOID]
+      repeat with q = getFirstTileCat() to gTiles.count
+        repeat with a = 1 to gTiles[q].tls.count
+          repeat with b = 1 to 9 then
+            if tileList[b] = gTiles[q].tls[a].nm then
+              found = found + 1
+              tileLocs[b] = point(q,a)
+              tileDefs[b] = gTiles[q].tls[a]
+              tileMids[b] = getTileMidpointOffset(gTiles[q].tls[a]) - point(1,1)
+              if found = 9 then exit repeat
+            end if
+          end repeat
+          if found = 9 then exit repeat
+        end repeat
+        if found = 9 then exit repeat
+      end repeat
+      if found <> 9 then
+        errorString = "Could not find all tiles in autotiler! Found " & found & " of 9. (Missing: "
+        placeCommas = false
+        repeat with q = 1 to 9 then
+          if tileLocs[q] = VOID then
+            if placeCommas then
+              errorString = errorString & ", " & tileList[q]
+            else
+              errorString = errorString & tileList[q]
+            end if
+            placeCommas = true
+          end if
+        end repeat
+        errorString = errorString & ")"
+        writeException("Custom Rect Autotiler", errorString)
+        return
+      end if
+      
+      -- Handle edge cases
+      if (rct.right - rct.left < tileDefs[6].sz.locH + tileDefs[7].sz.locH) or (rct.bottom - rct.top < tileDefs[6].sz.locV + tileDefs[9].sz.locV) then
+        -- Too small of a rectangle
+        writeMessage("Custom Rect Autotiler : rectangle too small")
+        return
+      end if
+      
+      -- Placement time! I place this in an order so as to preserve tile bodies in a good way
+      
+      -- Place the innards
+      cntrX = 0
+      repeat with a = rct.left + tileDefs[6].sz.locH to rct.right - tileDefs[8].sz.locH then
+        if cntrX = 0 then
+          cntrY = 0
+          repeat with b = rct.top + tileDefs[6].sz.locV to rct.bottom - tileDefs[8].sz.locV then
+            if cntrY = 0 then
+              placeTile(point(a, b) + tileMids[1], tileLocs[1])
+            end if
+            cntrY = cntrY + 1
+            if cntrY >= tileDefs[1].sz.locV then cntrY = 0
+          end repeat
+        end if
+        cntrX = cntrX + 1
+        if cntrX >= tileDefs[1].sz.locH then cntrX = 0
+      end repeat
+      
+      -- Place the top and bottom walls
+      cntr = 0
+      repeat with a = rct.left + tileDefs[6].sz.locH to rct.right - tileDefs[7].sz.locH then
+        if cntr = 0 then
+          placeTile(point(a, rct.top) + tileMids[2], tileLocs[2]) -- top
+          placeTile(point(a, rct.bottom-tileDefs[4].sz.locV+1) + tileMids[4], tileLocs[4]) -- bottom
+        end if
+        cntr = cntr + 1
+        if cntr >= tileDefs[2].sz.locH then cntr = 0
+      end repeat
+      
+      -- Place the left and right walls
+      cntr = 0
+      repeat with b = rct.top + tileDefs[6].sz.locV to rct.bottom - tileDefs[9].sz.locV then
+        if cntr = 0 then
+          placeTile(point(rct.left, b) + tileMids[5], tileLocs[5]) -- left
+          placeTile(point(rct.right-tileDefs[3].sz.locH+1, b) + tileMids[3], tileLocs[3]) -- right
+        end if
+        cntr = cntr + 1
+        if cntr >= tileDefs[3].sz.locV then cntr = 0
+      end repeat
+      
+      -- Place the corners
+      placeTile(point(rct.left, rct.top) + tileMids[6], tileLocs[6]) -- top left
+      placeTile(point(rct.right-tileDefs[7].sz.locH+1, rct.top) + tileMids[7], tileLocs[7]) -- top right
+      placeTile(point(rct.right-tileDefs[8].sz.locH+1, rct.bottom-tileDefs[8].sz.locV+1) + tileMids[8], tileLocs[8]) -- bottom right
+      placeTile(point(rct.left, rct.bottom-tileDefs[9].sz.locV+1) + tileMids[9], tileLocs[9]) -- bottom left
   end case
 end 
 

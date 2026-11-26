@@ -118,8 +118,7 @@ public sealed partial class LingoImage
             {
                 var buf = MemoryMarshal.Cast<byte, Bgra5551>(ImageBuffer);
                 ref var val = ref buf[idx];
-                var rgba = new Rgba32();
-                val.ToRgba32(ref rgba);
+                var rgba = val.ToRgba32();
                 return new LingoColor(rgba.R, rgba.G, rgba.B);
             }
             case ImageType.Palette1:
@@ -172,7 +171,7 @@ public sealed partial class LingoImage
             {
                 var buf = MemoryMarshal.Cast<byte, Bgra5551>(ImageBuffer);
                 ref var val = ref buf[idx];
-                val.FromRgba32(new Rgba32((byte)color.red, (byte)color.green, (byte)color.blue, 255));
+                val = Bgra5551.FromRgba32(new Rgba32((byte)color.red, (byte)color.green, (byte)color.blue, 255));
                 return;
             }
             case ImageType.Palette1:

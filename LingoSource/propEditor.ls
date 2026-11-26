@@ -255,7 +255,7 @@ on exitFrame me
   end if
   
   stretchSpeed = 0.002
-  if gProps[gPEprops.pmPos.locH].prps[gPEprops.pmPos.locV].tp <> "mosaicPlant" then
+  if gProps[gPEprops.pmPos.locH].prps[gPEprops.pmPos.locV].tags.getPos("keepRatio") = 0 then
     if checkCustomKeybind(#PropStretchVerticalIncrease, ["Y", "NOT", " "]) then
       gPEprops.propStretchY = gPEprops.propStretchY + stretchSpeed
       mouseStill = 0

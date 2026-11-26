@@ -9,6 +9,7 @@ using Drizzle.Ported;
 using Serilog;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Png.Chunks;
 
 namespace Drizzle.Logic.Rendering;
 
@@ -70,7 +71,7 @@ public sealed partial class LevelRenderer
                 // Save the image
                 var imgSharp = image.GetImgSharpImage();
                 imgSharp.Metadata.GetPngMetadata().TextData.Add(
-                    new PngTextData("Software", PngSoftwareName, null, null));
+                    new PngTextData("Software", PngSoftwareName, null!, null!));
                 imgSharp.SaveAsPng(file);
 
                 _countCamerasDone += 1;

@@ -111,6 +111,7 @@ on ApplyCustomStandardPlant (q, c, effectr, cEff, effGraf, repeatL, totalLayers)
     if solidMtrx[q2][c2][layer]=0 and solidCheck>=1 then
       repeat with i = 1 to mtrx[q2][c2] * 0.01 * amount then
         repeatLTemp = repeatL.duplicate()
+        currentImageLayer = 0
         pnt = giveGroundPosCustom(q,c,layer, cEff.tp)
         clingerMult = (giveMiddleOfTile(point(q,c)).locH>pnt.locH)
         d = random(9) + ((layer-1)*10)
@@ -439,7 +440,7 @@ on ApplyCustomGrower (q, c, effectr, cEff, effGraf, repeatL, totalLayers)
         var = random(vars)
         if cEff.findPos("heightAffectVar") and (part.doingTip <> 1) then
           varBias = restrict(varBias + cEff.heightAffectVar, 0, 1)
-          var = random(restrict((cEff.vars*varBias).integer, 1, cEff.vars))
+          var = random(restrict((vars*varBias).integer, 1, vars))
         end if
         
         -- Duplicate layer info for reference
@@ -456,13 +457,13 @@ on ApplyCustomGrower (q, c, effectr, cEff, effGraf, repeatL, totalLayers)
           if d + dL > 29 then exit repeat
           
           -- Compute area to copy from
-          grab = rect(cEff.pxlSz.locH * (var-1), 1 + cEff.pxlSz.locV*currentImageLayer, cEff.pxlSz.locH * var, 1 + cEff.pxlSz.locV*(currentImageLayer+1))
+          grab = rect(pxlSz.locH * (var-1), 1 + pxlSz.locV*currentImageLayer, pxlSz.locH * var, 1 + pxlSz.locV*(currentImageLayer+1))
           
           -- Actually draw
           if useEffCol then
             member("layer"&string(d + dL)).image.copyPixels(effGraf, part.qd, grab, {#color:colr, #ink:36})
             if colr <> color(0,255,0) then
-              grab = grab + rect(0, cEff.pxlSz.locV * tempImageLayers, 0, cEff.pxlSz.locV * tempImageLayers)
+              grab = grab + rect(0, pxlSz.locV * tempImageLayers, 0, pxlSz.locV * tempImageLayers)
               copyPixelsToEffectColor(gdLayer, d + dL, part.qd, "previewImprt", grab, 0.5, part.blnd)
               
               if cEff.findPos("effectFadeOut2") and part.blnd2 > 0 and part.doingTip = 0 then
@@ -473,7 +474,7 @@ on ApplyCustomGrower (q, c, effectr, cEff, effGraf, repeatL, totalLayers)
             member("layer"&string(d + dL)).image.copyPixels(effGraf, part.qd, grab, {#ink:36})
             if cEff.findPos("forceGrad") then
               if cEff.forceGrad then
-                grab = grab + rect(0, cEff.pxlSz.locV * tempImageLayers, 0, cEff.pxlSz.locV * tempImageLayers)
+                grab = grab + rect(0, pxlSz.locV * tempImageLayers, 0, pxlSz.locV * tempImageLayers)
                 copyPixelsToEffectColor("A", d + dL, part.qd, "previewImprt", grab, 0.5, part.blnd)
                 copyPixelsToEffectColor("B", d + dL, part.qd, "previewImprt", grab, 0.5, part.blnd)
               end if

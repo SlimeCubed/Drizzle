@@ -140,7 +140,9 @@ on exportAll()
   type objFileio: dynamic
   type objImg: dynamic
   type return: void
-  prepareRelease(FALSE)
+  if getBoolConfigOrDefault("Strip assets on export", true) then
+    prepareRelease(FALSE)
+  end if
   pth = the moviePath & "Export/"
   objFileio = new xtra("fileio")
   objImg = new xtra("ImgXtra")
@@ -438,18 +440,10 @@ on tryAddToPreview(ad: dynamic)
   if ((GL_ptPos + horiSZ + 1) > prevw.width) and (moreTilePreviews) then
     drprevw.copyPixels(sav2.image, rect(GL_drPos, 0, GL_drPos + horiSZ, vertSZ), rct)
     ad.ptPos = GL_drPos + 60000
-    ad.addProp(#category, gTiles.count)
-    if (ad.tags.getPos("notTile") = 0) then
-      gTiles[gTiles.count].tls.add(ad)
-    end if
     GL_drPos = GL_drPos + horiSZ + 1
   else
     prevw.copyPixels(sav2.image, rect(GL_ptPos, 0, GL_ptPos + horiSZ, vertSZ), rct)
     ad.ptPos = GL_ptPos
-    ad.addProp(#category, gTiles.count)
-    if (ad.tags.getPos("notTile") = 0) then
-      gTiles[gTiles.count].tls.add(ad)
-    end if
     GL_ptPos = GL_ptPos + horiSZ + 1  
   end if
 end
@@ -467,7 +461,10 @@ on getKeybindStr(k, d)
   inv = False
   addPlus = False
   
-  customStrCases = [["+", "plus"], ["-", "minus"], [",", "comma"], [".", "dot"], ["/", "slash"], ["\", "backslash"], [" ", "space"], ["`", "backtick"], ["~", "tilde"], ["!", "exclamation mark"], ["@", "at"], ["#", "pound"], ["$", "dollar sign"], ["%", "percent"], ["^", "caret"], ["&", "ampersand"], ["*", "asterisk"], ["(", "left parenthesis"], [")", "right parenthesis"], ["_", "underscore"], ["=", "equals"], ["|", "pipe"], ["'", "apostrophe"], [QUOTE, "quote"], [":", "colon"], [";", "semicolon"], ["?", "question mark"]]
+  customStrCases = [["+", "plus"], ["-", "minus"], [",", "comma"], [".", "dot"], ["/", "slash"], ["\", "backslash"], [" ", "space"], ["`", "backtick"], ["~", "tilde"], \
+["!", "exclamation mark"], ["@", "at"], ["#", "pound"], ["$", "dollar sign"], ["%", "percent"], ["^", "caret"], ["&", "ampersand"], ["*", "asterisk"], \
+["(", "left parenthesis"], [")", "right parenthesis"], ["_", "underscore"], ["=", "equals"], ["|", "pipe"], ["'", "apostrophe"], [QUOTE, "quote"], [":", "colon"], \
+[";", "semicolon"], ["?", "question mark"]]
   
   repeat with check in v then
     if inv then
@@ -536,7 +533,15 @@ on initCustomKeybindThings()
       GL_keyDict[#exitrender] = [48, "Z", "R"] -- Tab Z R
   end case
   
-  GL_keyCodeList = [["ArrowLeft", 123, "Left"], ["ArrowRight", 124, "Right"], ["ArrowDown", 125, "Down"], ["ArrowUp", 126, "Up"], ["Numpad0", 82, "Numpad 0"], ["Numpad1", 83, "Numpad 1"], ["Numpad2", 84, "Numpad 2"], ["Numpad3", 85, "Numpad 3"], ["Numpad4", 86, "Numpad 4"], ["Numpad5", 87, "Numpad 5"], ["Numpad6", 88, "Numpad 6"], ["Numpad7", 89, "Numpad 7"], ["Numpad8", 91, "Numpad 8"], ["Numpad9", 92, "Numpad 9"], ["NumpadPlus", 78, "Numpad Plus"], ["NumpadMinus", 70, "Numpad Minus"], ["NumpadTimes", 66, "Numpad Times"], ["NumpadDivide", 77, "Numpad Divide"], ["NumpadDot", 65, "Numpad Dot"], ["NumpadEnter", 76, "Numpad Enter"], ["Enter", 36, "Enter"], ["ContextMenu", 127, "Context Menu"], ["Escape", 53, "Escape"], ["Tab", 48, "Tab"], ["Space", " ", "Space"], ["Backspace", 51, "Backspace"], ["Insert", 114, "Insert"], ["Delete", 117, "Delete"], ["Home", 115, "Home"], ["End", 119, "End"], ["PageUp", 116, "Page Up"], ["PageDown", 121, "Page Down"], ["Pause", 113, "Pause"], ["F1", 122, "F1"], ["F2", 120, "F2"], ["F3", 99, "F3"], ["F4", 118, "F4"], ["F5", 96, "F5"], ["F6", 97, "F6"], ["F7", 98, "F7"], ["F8", 100, "F8"], ["F9", 101, "F9"], ["F10", 109, "F10"], ["F11", 103, "F11"], ["F12", 111, "F12"], ["F13", 105, "F13"], ["F14", 107, "F14"], ["F15", 113, "F15"]]
+  GL_keyCodeList = [["ArrowLeft", 123, "Left"], ["ArrowRight", 124, "Right"], ["ArrowDown", 125, "Down"], ["ArrowUp", 126, "Up"], ["Numpad0", 82, "Numpad 0"],\
+["Numpad1", 83, "Numpad 1"], ["Numpad2", 84, "Numpad 2"], ["Numpad3", 85, "Numpad 3"], ["Numpad4", 86, "Numpad 4"], ["Numpad5", 87, "Numpad 5"],\
+["Numpad6", 88, "Numpad 6"], ["Numpad7", 89, "Numpad 7"], ["Numpad8", 91, "Numpad 8"], ["Numpad9", 92, "Numpad 9"], ["NumpadPlus", 78, "Numpad Plus"],\
+["NumpadMinus", 70, "Numpad Minus"], ["NumpadTimes", 66, "Numpad Times"], ["NumpadDivide", 77, "Numpad Divide"], ["NumpadDot", 65, "Numpad Dot"],\
+["NumpadEnter", 76, "Numpad Enter"], ["Enter", 36, "Enter"], ["ContextMenu", 127, "Context Menu"], ["Escape", 53, "Escape"], ["Tab", 48, "Tab"],\
+["Space", " ", "Space"], ["Backspace", 51, "Backspace"], ["Insert", 114, "Insert"], ["Delete", 117, "Delete"], ["Home", 115, "Home"], ["End", 119, "End"],\
+["PageUp", 116, "Page Up"], ["PageDown", 121, "Page Down"], ["Pause", 113, "Pause"], ["F1", 122, "F1"], ["F2", 120, "F2"], ["F3", 99, "F3"], ["F4", 118, "F4"],\
+["F5", 96, "F5"], ["F6", 97, "F6"], ["F7", 98, "F7"], ["F8", 100, "F8"], ["F9", 101, "F9"], ["F10", 109, "F10"], ["F11", 103, "F11"], ["F12", 111, "F12"],\
+["F13", 105, "F13"], ["F14", 107, "F14"], ["F15", 113, "F15"]]
 end
 
 on keyToKeyCode(nm)

@@ -198,6 +198,10 @@ on loadLevel me, lvlName, fullPath
     gTEProps.addProp(#specialEdit, 0)
   end if
   
+  if ilk(gLOprops) <> #propList then
+    gLOprops = [:]
+  end if
+  
   if gLOprops.findpos(#size) = void then
     gLOprops.addProp(#size, point(52, 40))
   end if
@@ -206,7 +210,9 @@ on loadLevel me, lvlName, fullPath
     gLOprops.addProp(#extraTiles, [1,1,1,3])
   end if
   
-  gLOprops.pals = [[#detCol:color(255, 0, 0)]]
+  if gLOprops.findpos(#pals) = void then
+    gLOprops.addProp(#pals, [[#detCol:color(255, 0, 0)]])
+  end if
   
   if value(l2.line[7]) = void then
     gCameraProps.cameras = [point(gLOprops.size.locH*10, gLOprops.size.locV*10)-point(35*20, 20*20)]

@@ -321,7 +321,9 @@ on updateEffectsL me, mv: number
     put RETURN after txt
     
     repeat with ef = 1 to gEEprops.effects.count then
-      
+      if gEEprops.selectEditEffect <= gEEprops.effects.count and gEEprops.selectEditEffect - 20 - ef > 0 then
+        next repeat
+      end if
       if ef = gEEprops.editEffect then
         put string(ef)&". *"&gEEprops.effects[ef].nm&"*" after txt
         member("editEffectName").text = gEEprops.effects[ef].nm && "("&string(ef)&")"
