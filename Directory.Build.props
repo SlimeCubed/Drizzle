@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <Version>0.3.0.3</Version>
+        <Version>0.3.1.0</Version>
         <DefineConstants Condition="'$(FullRelease)' == 'true'">$(DefineConstants);FULL_RELEASE</DefineConstants>
         <TargetFramework>net8.0</TargetFramework>
         <LangVersion>12</LangVersion>
