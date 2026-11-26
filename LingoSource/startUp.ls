@@ -329,7 +329,11 @@ on exitFrame me
           writeException("Tile Init Error", "Line" && q && "in your Graphics/Init.txt does not have a #tp defined! Skipping line. (" & savTextLine & ")")
           next repeat
         end if
-        if (ad.findPos(#specs2) = 0) then
+        if (ad.findPos(#specs) = 0) and (ad.tp <> "autotile") then
+          writeException("Tile Init Error", "Line" && q && "in your Graphics/Init.txt does not have a #specs defined! Skipping line. (" & savTextLine & ")")
+          next repeat
+        end if
+        if (ad.findPos(#specs2) = 0) and (ad.tp <> "autotile") then
           writeException("Tile Init Warning", "Line" && q && "in your Graphics/Init.txt does not have a #specs2 defined! Assuming value. (" & savTextLine & ")")
           ad.addProp(#specs2, 0)
         end if
@@ -337,6 +341,42 @@ on exitFrame me
           writeException("Tile Init Warning", "Line" && q && "in your Graphics/Init.txt does not have a #tags defined! Assuming empty. (" & savTextLine & ")")
           ad.addProp(#tags, [])
         end if
+        
+        -- Also if it's an autotile, we have to set up some properties and do additional error checking
+        -- tilesInCat.add([#nm:"Ventbox Rect", #sz:point(1,1), #specs:[0], #placeMethod:"rect", #color:color(0,0,255)])
+        if (ad.tp = "autotile") then
+          ad.setaProp(#sz, point(1, 1))
+          ad.setaProp(#specs, [0])
+          ad.setaProp(#specs2, 0)
+          
+          if (ad.findPos(#placeMethod) = 0) then
+            writeException("Tile Init Error", "Line" && q && "in your Graphics/Init.txt with #tp:"&QUOTE&"autotile"&QUOTE&" does not have a #placeMethod defined! Skipping line. (" & savTextLine & ")")
+            next repeat
+          end if
+          
+          if (ad.findPos(#color) = 0) then
+            ad.setaProp(#color, gTiles[gTiles.count].clr)
+          end if
+          
+          case ad.placeMethod of
+            "rect":
+              rectCheckForSymbols = [#middle, #top, #right, #bottom, #left, #topLeft, #topRight, #bottomRight, #bottomLeft]
+              rectHasAllSymbols = true
+              repeat with rectSymbol in rectCheckForSymbols
+                if (ad.findPos(rectSymbol) = 0) then
+                  writeException("Tile Init Error", "Line" && q && "in your Graphics/Init.txt: rect autotile is missing symbol " & rectSymbol & "! Skipping line. (" & savTextLine & ")")
+                  rectHasAllSymbols = false
+                  exit repeat
+                end if
+              end repeat
+              
+            otherwise:
+              writeException("Tile Init Error", "Line" && q && "in your Graphics/Init.txt with #tp:"&QUOTE&"autotile"&QUOTE&" does not have a valid #placeMethod! Skipping line. (" & savTextLine & ")")
+              next repeat
+          end case
+        end if
+        
+        -- Add tile/whatever who cares at this point
         if (ad.tags.getPos("notTile") = 0) then
           gTiles.getAt(gTiles.count).tls.add(ad)
         end if
